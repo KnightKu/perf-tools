@@ -41,7 +41,7 @@
 
 ### default variables
 tracing=/sys/kernel/debug/tracing
-opt_duration=0; duration=; opt_interval=0; interval=999999; opt_timestamp=0
+opt_duration=0; duration=; opt_interval=0; interval=999999; opt_timestamp=0; opt_lustre_mods=0;
 opt_tail=0; tcmd=cat; ttext=
 trap 'quit=1' INT QUIT TERM PIPE HUP	# sends execution to end tracing section
 
@@ -53,6 +53,7 @@ function usage {
 	                 -i seconds      # interval summary
 	                 -t top          # show top num entries only
 	                 -T              # include timestamp (for -i)
+			 -L		 # profiling lustre related modules
 	  eg,
 	       funccount 'vfs*'          # trace all funcs that match "vfs*"
 	       funccount -d 5 'tcp*'     # trace "tcp*" funcs for 5 seconds
@@ -77,21 +78,24 @@ function die {
 }
 
 ### process options
-while getopts d:hi:t:T opt
+while getopts d:hi:t:TL opt
 do
 	case $opt in
 	d)	opt_duration=1; duration=$OPTARG ;;
 	i)	opt_interval=1; interval=$OPTARG ;;
 	t)	opt_tail=1; tnum=$OPTARG ;;
 	T)	opt_timestamp=1 ;;
+	L)	opt_lustre_mods=1 ;;
 	h|?)	usage ;;
 	esac
 done
 shift $(( $OPTIND - 1 ))
 
 ### option logic
-(( $# == 0 )) && usage
-funcs="$1"
+if ((!opt_lustre_mods)); then
+	(( $# == 0 )) && usage
+	funcs="$1"
+fi
 if (( opt_tail )); then
 	tcmd="head -$tnum"
 	ttext=" Top $tnum only."
@@ -109,7 +113,19 @@ cd $tracing || die "ERROR: accessing tracing. Root user? Kernel has FTRACE?
 
 ### enable tracing
 sysctl -q kernel.ftrace_enabled=1	# doesn't set exit status
-echo "$funcs" > set_ftrace_filter || die "ERROR: enabling \"$funcs\". Exiting."
+
+if ((opt_lustre_mods)); then
+	MODS=$(ls -R /lib/modules/`uname -r`/extra/ | grep '.ko$' | awk -F '.' '{print $1}')
+	for MOD in $MODS;
+	do
+		lsmod | grep -w $MOD >/dev/null 2>&1
+		if [ $? -eq 0 ]; then
+			echo ":mod:$MOD" >> set_ftrace_filter || die "ERROR: enabling \"$funcs\". Exiting."
+		fi
+	done
+else
+	echo "$funcs" > set_ftrace_filter || die "ERROR: enabling \"$funcs\". Exiting."
+fi
 warn "echo nop > current_tracer"
 if ! echo 1 > function_profile_enabled; then
 	echo > set_ftrace_filter
