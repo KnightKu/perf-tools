@@ -93,7 +93,7 @@ shift $(( $OPTIND - 1 ))
 (( $# == 0 )) && usage
 funcs="$1"
 if (( opt_tail )); then
-	tcmd="tail -$tnum"
+	tcmd="head -$tnum"
 	ttext=" Top $tnum only."
 fi
 if (( opt_duration )); then
@@ -136,7 +136,7 @@ while (( !quit && (!opt_duration || secs < duration) )); do
 		for (k in a) {
 			printf "%-30s %8d\n", k,  a[k]
 		}
-	}' | sort -n -k2 | $tcmd
+	}' | sort -nr -k2 | $tcmd
 done
 
 ### end tracing
