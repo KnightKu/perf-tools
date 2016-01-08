@@ -155,7 +155,7 @@ while (( !quit && (!opt_duration || secs < duration) )); do
 		$2 ~ /[0-9]/ { a[$1] += $3;b[$1] += $2;c[$1] += $5}
 		END {
 			for (k in a) {
-				printf "%-30s %-12.2f %-12d %-20d\n", k,  c[k],  b[k],  a[k]
+				printf "%-30s %-12.2f %-12d %-20d\n", k,  a[k]/b[k],  b[k],  a[k]
 			}
 		}' | sort -nr -k2 | $tcmd
 		
@@ -166,7 +166,7 @@ while (( !quit && (!opt_duration || secs < duration) )); do
 		$2 ~ /[0-9]/ { a[$1] += $3;b[$1] += $2;c[$1] += $5}
 		END {
 			for (k in a) {
-				printf "%-30s %-20d %-12d %-12.2f\n", k,  a[k],  b[k],  c[k]
+				printf "%-30s %-20d %-12d %-12.2f\n", k,  a[k],  b[k],  a[k]/b[k]
 			}
 		}' | sort -nr -k2 | $tcmd
 	fi
