@@ -56,11 +56,12 @@ function usage {
 	                 -L		 # profiling lustre related modules
 	                 -s		 # sort by avg time cost
 	  eg,
-	       funccost 'vfs*'          # trace all funcs that match "vfs*"
-	       funccost -d 5 'tcp*'     # trace "tcp*" funcs for 5 seconds
-	       funccost -t 10 'ext3*'   # show top 10 "ext3*" funcs
-	       funccost -i 1 'ext3*'    # summary every 1 second
-	       funccost -i 1 -d 5 'ext3*' # 5 x 1 second summaries
+	       funccost 'vfs*'          	# trace all funcs that match "vfs*"
+	       funccost 'vfs_stat,vfs_getattr'  # trace multiple funcs, split by ','
+	       funccost -d 5 'tcp*'     	# trace "tcp*" funcs for 5 seconds
+	       funccost -t 10 'ext3*'   	# show top 10 "ext3*" funcs
+	       funccost -i 1 'ext3*'    	# summary every 1 second
+	       funccost -i 1 -d 5 'ext3*' 	# 5 x 1 second summaries
 
 	See the man page and example file for more info.
 END
@@ -118,6 +119,7 @@ cd $tracing || die "ERROR: accessing tracing. Root user? Kernel has FTRACE?
 sysctl -q kernel.ftrace_enabled=1	# doesn't set exit status
 
 if ((opt_lustre_mods)); then
+	echo > set_ftrace_filter
 	MODS=$(ls -R /lib/modules/`uname -r`/extra/ | grep '.ko$' | awk -F '.' '{print $1}')
 	for MOD in $MODS;
 	do
@@ -127,7 +129,11 @@ if ((opt_lustre_mods)); then
 		fi
 	done
 else
-	echo "$funcs" > set_ftrace_filter || die "ERROR: enabling \"$funcs\". Exiting."
+	echo > set_ftrace_filter
+	func_arr=($(echo $funcs|tr ',' ' '|tr -s ' '))
+	for subfunc in ${func_arr[@]}; do
+		echo "$subfunc" >> set_ftrace_filter || die "ERROR: enabling \"$funcs\". Exiting."
+	done
 fi
 warn "echo nop > current_tracer"
 if ! echo 1 > function_profile_enabled; then
