@@ -44,6 +44,7 @@ tracing=/sys/kernel/debug/tracing
 opt_duration=0; duration=; opt_interval=0; interval=999999; opt_timestamp=0; opt_lustre_mods=0;
 opt_tail=0; tcmd=cat; ttext=
 trap 'quit=1' INT QUIT TERM PIPE HUP	# sends execution to end tracing section
+trace_target=""
 
 function usage {
 	cat <<-END >&2
@@ -101,11 +102,7 @@ if (( opt_tail )); then
 	tcmd="head -$tnum"
 	ttext=" Top $tnum only."
 fi
-if (( opt_duration )); then
-	echo "Tracing \"$funcs\" for $duration seconds.$ttext.."
-else
-	echo "Tracing \"$funcs\".$ttext.. Ctrl-C to end."
-fi
+
 (( opt_duration && !opt_interval )) && interval=$duration
 
 ### check permissions
@@ -116,6 +113,7 @@ cd $tracing || die "ERROR: accessing tracing. Root user? Kernel has FTRACE?
 sysctl -q kernel.ftrace_enabled=1	# doesn't set exit status
 
 if ((opt_lustre_mods)); then
+	echo "Start setting lustre functions..."
 	echo > set_ftrace_filter
 	MODS=$(ls -R /lib/modules/`uname -r`/extra/ | grep '.ko$' | awk -F '.' '{print $1}')
 	for MOD in $MODS;
@@ -125,6 +123,7 @@ if ((opt_lustre_mods)); then
 			echo ":mod:$MOD" >> set_ftrace_filter || die "ERROR: enabling \"$funcs\". Exiting."
 		fi
 	done
+	echo "Setting lustre functions done..."
 else
 	echo > set_ftrace_filter
 	func_arr=($(echo $funcs|tr ',' ' '|tr -s ' '))
@@ -132,6 +131,19 @@ else
 		echo "$subfunc" >> set_ftrace_filter || die "ERROR: enabling \"$funcs\". Exiting."
 	done
 fi
+
+if ((opt_lustre_mods)); then
+	trace_target="[lustre modules functions]"
+else
+	trace_target=$funcs
+fi
+
+if (( opt_duration )); then
+	echo "Tracing \"$trace_target\" for $duration seconds.$ttext.."
+else
+	echo "Tracing \"$trace_target\".$ttext.. Ctrl-C to end."
+fi
+
 warn "echo nop > current_tracer"
 if ! echo 1 > function_profile_enabled; then
 	echo > set_ftrace_filter
