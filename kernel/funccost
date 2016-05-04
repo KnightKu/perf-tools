@@ -131,7 +131,7 @@ else
 	echo > set_ftrace_filter
 	func_arr=($(echo $funcs|tr ',' ' '|tr -s ' '))
 	for subfunc in ${func_arr[@]}; do
-		echo "$subfunc" >> set_ftrace_filter || die "ERROR: enabling \"$funcs\". Exiting."
+		echo "$subfunc" >> set_ftrace_filter || die "ERROR: enabling \"$subfunc\" \"$funcs\". Exiting."
 	done
 fi
 
