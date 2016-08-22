@@ -48,13 +48,13 @@ trace_target=""
 
 function usage {
 	cat <<-END >&2
-	USAGE: funccount [-hT] [-i secs] [-d secs] [-t top] funcstring
+	USAGE: funccount [-hTL] [-i secs] [-d secs] [-t top] funcstring
 	                 -d seconds      # total duration of trace
 	                 -h              # this usage message
 	                 -i seconds      # interval summary
 	                 -t top          # show top num entries only
 	                 -T              # include timestamp (for -i)
-			 -L		 # profiling lustre related modules
+	                 -L		 # profiling lustre related modules
 	  eg,
 	       funccount 'vfs*'          # trace all funcs that match "vfs*"
 	       funccost 'vfs_stat,vfs_getattr'  # trace multiple funcs, split by ','
@@ -120,7 +120,7 @@ if ((opt_lustre_mods)); then
 	do
 		lsmod | grep -w $MOD >/dev/null 2>&1
 		if [ $? -eq 0 ]; then
-			echo ":mod:$MOD" >> set_ftrace_filter || die "ERROR: enabling \"$funcs\". Exiting."
+			echo ":mod:$MOD" >> set_ftrace_filter || die "ERROR: enabling \"$MOD\". Exiting."
 		fi
 	done
 	echo "Setting lustre functions done..."
@@ -128,7 +128,7 @@ else
 	echo > set_ftrace_filter
 	func_arr=($(echo $funcs|tr ',' ' '|tr -s ' '))
 	for subfunc in ${func_arr[@]}; do
-		echo "$subfunc" >> set_ftrace_filter || die "ERROR: enabling \"$funcs\". Exiting."
+		echo "$subfunc" >> set_ftrace_filter || die "ERROR: enabling \"$subfunc\" \"$funcs\". Exiting."
 	done
 fi
 
