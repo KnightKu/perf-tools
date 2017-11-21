@@ -97,8 +97,7 @@ shift $(( $OPTIND - 1 ))
 
 ### option logic
 if ((!opt_lustre_mods)); then
-	(( $# == 0 )) && usage
-	funcs="$1"
+	(( $# != 0 )) && funcs="$1"
 fi
 if (( opt_tail )); then
 	tcmd="head -$tnum"
