@@ -221,9 +221,16 @@ if (( opt_tail )); then
 		edie "ERROR: setting -T (funcgraph-tail). Old kernel? Exiting."
 	fi
 fi
+
 if (( opt_nodur )); then
 	if ! echo nofuncgraph-duration > trace_options; then
 		edie "ERROR: setting -D (nofuncgraph-duration). Exiting."
+	fi
+fi
+
+if [ -e options/function-fork ]; then
+	if ! echo function-fork > trace_options; then
+		edie "ERROR: setting stracing PID children. Exiting."
 	fi
 fi
 
